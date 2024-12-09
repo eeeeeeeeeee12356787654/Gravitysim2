@@ -1,0 +1,131 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Simulation with Trails</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="gravityCanvas"></canvas>
+<script>
+    // Get the canvas and context
+    const canvas = document.getElementById("gravityCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Set the canvas size to full screen
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Gravitational constant (scaled for simulation)
+    const G = 6.67430e-11 * 1e5; // Adjusted constant for visualization
+
+    // Object class
+    class Object {
+        constructor(x, y, mass, radius) {
+            this.x = x;
+            this.y = y;
+            this.mass = mass;
+            this.radius = radius;
+            this.velX = 0;
+            this.velY = 0;
+            this.trail = [];  // Stores previous positions for trail
+        }
+
+        applyGravity(other) {
+            const dx = other.x - this.x;
+            const dy = other.y - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const force = G * (this.mass * other.mass) / (dist * dist);
+            const angle = Math.atan2(dy, dx);
+
+            const fx = force * Math.cos(angle);
+            const fy = force * Math.sin(angle);
+
+            // Update velocities
+            this.velX += fx / this.mass;
+            this.velY += fy / this.mass;
+        }
+
+        move() {
+            this.x += this.velX;
+            this.y += this.velY;
+
+            // Add current position to trail (for visualization)
+            this.trail.push({x: this.x, y: this.y});
+            if (this.trail.length > 50) { // Limit trail length
+                this.trail.shift();
+            }
+        }
+
+        draw() {
+            // Draw the object itself
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "red";
+            ctx.fill();
+            ctx.closePath();
+
+            // Draw the trail
+            for (let i = 0; i < this.trail.length; i++) {
+                const alpha = Math.max(0, 1 - i / this.trail.length);
+                ctx.beginPath();
+                ctx.arc(this.trail[i].x, this.trail[i].y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+    }
+
+    // Create some objects with random properties
+    const objects = [];
+    for (let i = 0; i < 5; i++) {
+        objects.push(new Object(
+            Math.random() * canvas.width,
+            Math.random() * canvas.height,
+            Math.random() * 30 + 10,  // Random mass between 10 and 40
+            Math.random() * 15 + 10   // Random radius between 10 and 25
+        ));
+    }
+
+    // Animation loop
+    function animate() {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Apply gravity and move objects
+        for (let i = 0; i < objects.length; i++) {
+            for (let j = 0; j < objects.length; j++) {
+                if (i !== j) {
+                    objects[i].applyGravity(objects[j]);
+                }
+            }
+        }
+
+        // Move and draw each object
+        for (let obj of objects) {
+            obj.move();
+            obj.draw();
+        }
+
+        // Loop the animation
+        requestAnimationFrame(animate);
+    }
+
+    // Start the animation
+    animate();
+</script>
+</body>
+</html>
+```
